@@ -1,0 +1,399 @@
+/* リセット・基本スタイル */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', 'ヒラギノ角ゴ Pro', 'Hiragino Kaku Gothic Pro', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+}
+
+/* ゲームコンテナ */
+.game-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+/* ゲームヘッダー */
+.game-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 20px;
+    text-align: center;
+}
+
+.game-header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.game-header .subtitle {
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+/* ゲーム状態表示 */
+.game-status {
+    background: #f5f5f5;
+    padding: 15px 20px;
+    border-bottom: 2px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.status-message {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.turn-indicator {
+    font-size: 1em;
+    padding: 8px 15px;
+    background: white;
+    border-radius: 20px;
+    border: 2px solid #667eea;
+    color: #667eea;
+    font-weight: bold;
+}
+
+/* ゲーム盤面 */
+.game-board {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 30px;
+    min-height: 800px;
+}
+
+/* プレイヤーセクション */
+.player-section {
+    background: #f9f9f9;
+    border-radius: 10px;
+    padding: 20px;
+    border: 3px solid #ddd;
+}
+
+.player-top {
+    border-color: #667eea;
+    order: 1;
+}
+
+.player-bottom {
+    border-color: #764ba2;
+    order: 3;
+}
+
+/* プレイヤー情報 */
+.player-info {
+    margin-bottom: 20px;
+}
+
+.player-name {
+    font-size: 1.3em;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.health-bar-container {
+    width: 100%;
+    height: 35px;
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid #999;
+}
+
+.health-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.5s ease;
+    position: relative;
+}
+
+.health-text {
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    font-size: 0.95em;
+}
+
+.health-bar.low {
+    background: linear-gradient(90deg, #ff6b6b 0%, #ff5252 100%);
+}
+
+/* フィールド */
+.field-container {
+    margin-bottom: 20px;
+}
+
+.field-container h3 {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.field {
+    background: white;
+    border: 2px dashed #bbb;
+    border-radius: 8px;
+    padding: 15px;
+    min-height: 120px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    align-content: start;
+}
+
+/* 手札 */
+.hand-container {
+    margin-bottom: 0;
+}
+
+.hand-container h3 {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.hand {
+    background: white;
+    border: 2px solid #bbb;
+    border-radius: 8px;
+    padding: 15px;
+    min-height: 150px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-content: flex-start;
+}
+
+/* カード */
+.card {
+    background: white;
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 12px;
+    width: 90px;
+    height: 130px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    text-align: center;
+    font-size: 0.8em;
+    position: relative;
+    user-select: none;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+}
+
+.card.selectable {
+    border-color: #667eea;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+}
+
+.card.selected {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.card-name {
+    font-weight: bold;
+    font-size: 0.85em;
+    margin-bottom: 5px;
+}
+
+.card-icon {
+    font-size: 1.5em;
+    margin: 3px 0;
+}
+
+.card-stats {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    font-size: 0.75em;
+    font-weight: bold;
+    margin-top: 5px;
+    border-top: 1px solid #ddd;
+    padding-top: 3px;
+}
+
+.card-stat {
+    flex: 1;
+}
+
+.card-cost {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #FFD700;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.7em;
+    color: #333;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 中央情報 */
+.center-info {
+    order: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    padding: 20px;
+}
+
+.turn-number {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.end-turn-btn,
+.restart-btn {
+    padding: 12px 30px;
+    font-size: 1em;
+    font-weight: bold;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.end-turn-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.end-turn-btn:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.end-turn-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.restart-btn {
+    background: #4CAF50;
+    color: white;
+}
+
+.restart-btn:hover {
+    background: #45a049;
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+/* ゲームログ */
+.game-log {
+    background: #f5f5f5;
+    padding: 20px;
+    border-top: 2px solid #ddd;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.game-log h3 {
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 0.9em;
+}
+
+.log-content {
+    font-size: 0.85em;
+    line-height: 1.6;
+    color: #666;
+}
+
+.log-entry {
+    padding: 5px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-entry.player1 {
+    color: #667eea;
+}
+
+.log-entry.player2 {
+    color: #764ba2;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .game-header h1 {
+        font-size: 1.8em;
+    }
+
+    .player-section {
+        padding: 15px;
+    }
+
+    .card {
+        width: 80px;
+        height: 110px;
+        font-size: 0.7em;
+        padding: 8px;
+    }
+
+    .field,
+    .hand {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        padding: 10px;
+    }
+
+    .end-turn-btn,
+    .restart-btn {
+        padding: 10px 20px;
+        font-size: 0.9em;
+    }
+
+    .center-info {
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+}
