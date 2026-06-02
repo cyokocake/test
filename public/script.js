@@ -88,6 +88,32 @@ function updateGameUI() {
     document.getElementById('turnIndicator').textContent = `現在: プレイヤー${gameState.currentPlayer}のターン`;
     document.getElementById('statusMessage').textContent =
         gameState.gameActive ? `プレイヤー${gameState.currentPlayer}のターンです` : 'ゲーム開始待機中...';
+    
+    // フィールドのクリックハンドラを更新
+    updateFieldClickHandlers();
+}
+
+// フィールドのクリックハンドラを更新
+function updateFieldClickHandlers() {
+    document.querySelectorAll('.field').forEach(field => {
+        const playerId = parseInt(field.id.replace('player', '').replace('Field', ''));
+        field.onclick = (e) => {
+            if (e.target === field) {
+                handleFieldClick(playerId);
+            }
+        };
+    });
+}
+
+// フィールドをクリック
+function handleFieldClick(playerId) {
+    if (gameState.currentPlayer !== playerId || !gameState.gameActive) return;
+    if (!gameState.selectedCard) {
+        addLog('カードを選択してからフィールドをクリックしてください', gameState.currentPlayer);
+        return;
+    }
+
+    placeCard(playerId);
 }
 
 // プレイヤー個別の情報を更新
@@ -163,9 +189,6 @@ function handleCardClick(card, playerId, location, cardElement) {
     if (location === 'hand') {
         // 手札からのカード選択
         selectCard(card, cardElement);
-    } else if (location === 'field' && gameState.selectedCard) {
-        // フィールドのカードをターゲット選択
-        selectTarget(card, cardElement);
     }
 }
 
@@ -177,23 +200,23 @@ function selectCard(card, cardElement) {
     if (gameState.selectedCard?.instanceId === card.instanceId) {
         // 同じカードをクリックした場合は選択解除
         gameState.selectedCard = null;
+        addLog(`${card.name}の選択を解除しました`, gameState.currentPlayer);
     } else {
         // 新しいカードを選択
         if (players[gameState.currentPlayer].mana >= card.cost) {
             gameState.selectedCard = card;
             cardElement.classList.add('selected');
-            addLog(`プレイヤー${gameState.currentPlayer}: ${card.name}を選択しました`, gameState.currentPlayer);
+            addLog(`${card.name}を選択しました。フィールドをクリックして配置してください`, gameState.currentPlayer);
         } else {
-            addLog(`マナが足りません！必要: ${card.cost}, 所有: ${players[gameState.currentPlayer].mana}`);
+            addLog(`マナが足りません！必要: ${card.cost}, 所有: ${players[gameState.currentPlayer].mana}`, gameState.currentPlayer);
         }
     }
 }
 
-// ターゲットを選択
-function selectTarget(targetCard, targetElement) {
+// カードを配置
+function placeCard(playerId) {
     const player = players[gameState.currentPlayer];
     const opponent = players[gameState.currentPlayer === 1 ? 2 : 1];
-
     const selectedCard = gameState.selectedCard;
 
     // マナをチェック
@@ -202,8 +225,10 @@ function selectTarget(targetCard, targetElement) {
         return;
     }
 
-    // カードを配置
+    // カードを手札から削除
     player.hand = player.hand.filter(c => c.instanceId !== selectedCard.instanceId);
+    
+    // カードをフィールドに追加
     player.field.push({
         ...selectedCard,
         instanceId: Math.random(),
@@ -218,7 +243,7 @@ function selectTarget(targetCard, targetElement) {
     opponent.health -= selectedCard.attack;
 
     addLog(
-        `プレイヤー${gameState.currentPlayer}: ${selectedCard.name}を配置し、${selectedCard.attack}ダメージを与えました`,
+        `${selectedCard.name}を配置し、${selectedCard.attack}ダメージを与えました！`,
         gameState.currentPlayer
     );
 
@@ -240,7 +265,7 @@ function endTurn() {
     const currentPlayer = gameState.currentPlayer;
     const opponent = gameState.currentPlayer === 1 ? 2 : 1;
 
-    addLog(`プレイヤー${currentPlayer}のターン終了`, currentPlayer);
+    addLog(`ターン終了`, currentPlayer);
 
     // ターンを交代
     gameState.currentPlayer = opponent;
@@ -300,6 +325,7 @@ function restartGame() {
     document.getElementById('gameLog').innerHTML = '';
     addLog('ゲーム開始！');
     addLog('プレイヤー1のターン開始', 1);
+    addLog('手札のカードをクリックして選択し、フィールドをクリックして配置してください', 1);
 
     // UI更新
     updateGameUI();
