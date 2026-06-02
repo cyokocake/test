@@ -14,77 +14,134 @@
             <p class="subtitle">2人対戦型カードゲーム</p>
         </div>
 
-        <!-- ゲーム状態表示 -->
-        <div class="game-status">
-            <div class="status-message" id="statusMessage">ゲーム準備中...</div>
-            <div class="turn-indicator" id="turnIndicator"></div>
-        </div>
-
-        <!-- ゲーム盤面 -->
-        <div class="game-board">
-            <!-- プレイヤー1（上）-->
-            <div class="player-section player-top">
-                <div class="player-info">
-                    <h2 class="player-name">🎮 プレイヤー1</h2>
-                    <div class="health-bar-container">
-                        <div class="health-bar" id="player1Health" style="width: 100%">
-                            <span class="health-text" id="player1HealthText">100/100</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- プレイヤー1のフィールド -->
-                <div class="field-container">
-                    <h3>フィールド</h3>
-                    <div class="field" id="player1Field"></div>
-                </div>
-
-                <!-- プレイヤー1の手札 -->
-                <div class="hand-container">
-                    <h3>手札</h3>
-                    <div class="hand" id="player1Hand"></div>
-                </div>
-            </div>
-
-            <!-- 中央の情報 -->
-            <div class="center-info">
-                <div class="turn-number" id="turnNumber">ターン: 1</div>
-                <button class="end-turn-btn" id="endTurnBtn" onclick="endTurn()">ターン終了</button>
-                <button class="restart-btn" onclick="restartGame()">ゲーム開始</button>
-            </div>
-
-            <!-- プレイヤー2（下）-->
-            <div class="player-section player-bottom">
-                <div class="player-info">
-                    <h2 class="player-name">🎮 プレイヤー2</h2>
-                    <div class="health-bar-container">
-                        <div class="health-bar" id="player2Health" style="width: 100%">
-                            <span class="health-text" id="player2HealthText">100/100</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- プレイヤー2のフィールド -->
-                <div class="field-container">
-                    <h3>フィールド</h3>
-                    <div class="field" id="player2Field"></div>
-                </div>
-
-                <!-- プレイヤー2の手札 -->
-                <div class="hand-container">
-                    <h3>手札</h3>
-                    <div class="hand" id="player2Hand"></div>
+        <!-- ルーム選択画面 -->
+        <div id="roomSelectScreen" class="screen">
+            <div class="screen-content">
+                <h2>ゲームモード選択</h2>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="showCreateRoomDialog()">
+                        新しいゲームを作成
+                    </button>
+                    <button class="btn btn-secondary" onclick="showJoinRoomDialog()">
+                        既存のゲームに参加
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- ゲーム履歴・ログ -->
-        <div class="game-log">
-            <h3>ゲームログ</h3>
-            <div class="log-content" id="gameLog"></div>
+        <!-- ルーム作成画面 -->
+        <div id="createRoomScreen" class="screen" style="display: none;">
+            <div class="screen-content">
+                <h2>新しいゲームを作成</h2>
+                <p>作成中...</p>
+                <div id="roomInfoDisplay" style="display: none; margin-top: 20px;">
+                    <p><strong>ルームID:</strong></p>
+                    <div class="room-id-box">
+                        <span id="roomIdText"></span>
+                        <button class="btn btn-small" onclick="copyRoomId()">コピー</button>
+                    </div>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                        このID をお友達と共有してください。友達が参加するのを待っています...
+                    </p>
+                    <div id="playerStatusDisplay" style="margin-top: 15px;">
+                        <p>👤 プレイヤー1: あなた ✓</p>
+                        <p>👤 プレイヤー2: <span id="player2Status">待機中...</span></p>
+                    </div>
+                    <button class="btn btn-primary" id="startGameBtn" onclick="startGame()" style="display: none; margin-top: 20px;">
+                        ゲーム開始
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ルーム参加画面 -->
+        <div id="joinRoomScreen" class="screen" style="display: none;">
+            <div class="screen-content">
+                <h2>ゲームに参加</h2>
+                <div class="input-group">
+                    <label>ルームID:</label>
+                    <input type="text" id="joinRoomIdInput" placeholder="ルームIDを入力" maxlength="8">
+                    <button class="btn btn-primary" onclick="joinRoom()">参加</button>
+                    <button class="btn btn-secondary" onclick="backToRoomSelect()">戻る</button>
+                </div>
+                <div id="joinErrorMessage" style="color: #ff6b6b; margin-top: 10px; display: none;"></div>
+            </div>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div id="gameScreen" class="screen" style="display: none;">
+            <!-- ゲーム状態表示 -->
+            <div class="game-status">
+                <div class="status-message" id="statusMessage">ゲーム準備中...</div>
+                <div class="turn-indicator" id="turnIndicator"></div>
+                <div style="font-size: 0.9em;">ルームID: <strong id="displayRoomId"></strong></div>
+            </div>
+
+            <!-- ゲーム盤面 -->
+            <div class="game-board">
+                <!-- プレイヤー1（上）-->
+                <div class="player-section player-top">
+                    <div class="player-info">
+                        <h2 class="player-name">🎮 プレイヤー1</h2>
+                        <div class="health-bar-container">
+                            <div class="health-bar" id="player1Health" style="width: 100%">
+                                <span class="health-text" id="player1HealthText">100/100</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- プレイヤー1のフィールド -->
+                    <div class="field-container">
+                        <h3>フィールド</h3>
+                        <div class="field" id="player1Field"></div>
+                    </div>
+
+                    <!-- プレイヤー1の手札 -->
+                    <div class="hand-container">
+                        <h3>手札</h3>
+                        <div class="hand" id="player1Hand"></div>
+                    </div>
+                </div>
+
+                <!-- 中央の情報 -->
+                <div class="center-info">
+                    <div class="turn-number" id="turnNumber">ターン: 1</div>
+                    <button class="end-turn-btn" id="endTurnBtn" onclick="endTurn()">ターン終了</button>
+                </div>
+
+                <!-- プレイヤー2（下）-->
+                <div class="player-section player-bottom">
+                    <div class="player-info">
+                        <h2 class="player-name">🎮 プレイヤー2</h2>
+                        <div class="health-bar-container">
+                            <div class="health-bar" id="player2Health" style="width: 100%">
+                                <span class="health-text" id="player2HealthText">100/100</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- プレイヤー2のフィールド -->
+                    <div class="field-container">
+                        <h3>フィールド</h3>
+                        <div class="field" id="player2Field"></div>
+                    </div>
+
+                    <!-- プレイヤー2の手札 -->
+                    <div class="hand-container">
+                        <h3>手札</h3>
+                        <div class="hand" id="player2Hand"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ゲーム履歴・ログ -->
+            <div class="game-log">
+                <h3>ゲームログ</h3>
+                <div class="log-content" id="gameLog"></div>
+            </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="online-game.js"></script>
 </body>
 </html>
