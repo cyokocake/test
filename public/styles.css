@@ -102,10 +102,27 @@ body {
     margin-bottom: 20px;
 }
 
+.player-name-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
 .player-name {
     font-size: 1.3em;
-    margin-bottom: 10px;
     color: #333;
+}
+
+/* マナ表示 */
+.mana-display {
+    font-size: 1em;
+    font-weight: bold;
+    color: #5b4fcf;
+    background: #ede9ff;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 2px solid #a89cf5;
 }
 
 .health-bar-container {
@@ -193,7 +210,7 @@ body {
     border-radius: 8px;
     padding: 12px;
     width: 90px;
-    height: 130px;
+    height: 120px;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -241,17 +258,13 @@ body {
 
 .card-stats {
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
     width: 100%;
     font-size: 0.75em;
     font-weight: bold;
     margin-top: 5px;
     border-top: 1px solid #ddd;
     padding-top: 3px;
-}
-
-.card-stat {
-    flex: 1;
 }
 
 .card-cost {
@@ -363,6 +376,153 @@ body {
     color: #764ba2;
 }
 
+/* 体力設定 */
+.health-setting {
+    background: #f0f4ff;
+    border: 2px solid #a89cf5;
+    border-radius: 10px;
+    padding: 15px 20px;
+}
+
+.health-setting label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.health-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.health-input-row input[type="number"] {
+    width: 120px;
+    padding: 8px 12px;
+    font-size: 1.1em;
+    border: 2px solid #a89cf5;
+    border-radius: 8px;
+    outline: none;
+    text-align: center;
+}
+
+.health-input-row input[type="number"]:focus {
+    border-color: #667eea;
+}
+
+.health-input-row span {
+    font-weight: bold;
+    color: #667eea;
+}
+
+/* スクリーン共通 */
+.screen {
+    padding: 40px 20px;
+}
+
+.screen-content {
+    max-width: 500px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.screen-content h2 {
+    font-size: 1.8em;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.btn {
+    padding: 12px 30px;
+    font-size: 1em;
+    font-weight: bold;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #eee;
+    color: #333;
+    border: 2px solid #ccc;
+}
+
+.btn-secondary:hover {
+    background: #ddd;
+    transform: scale(1.05);
+}
+
+.btn-small {
+    padding: 6px 14px;
+    font-size: 0.85em;
+    min-width: unset;
+    background: #667eea;
+    color: white;
+    border-radius: 15px;
+}
+
+.room-id-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #f0f4ff;
+    border: 2px solid #a89cf5;
+    border-radius: 10px;
+    padding: 12px 20px;
+    margin: 10px 0;
+    font-size: 1.4em;
+    font-weight: bold;
+    letter-spacing: 3px;
+    color: #333;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.input-group label {
+    font-weight: bold;
+    color: #555;
+}
+
+.input-group input[type="text"] {
+    padding: 10px 16px;
+    font-size: 1.1em;
+    border: 2px solid #a89cf5;
+    border-radius: 8px;
+    outline: none;
+    text-align: center;
+    width: 200px;
+    letter-spacing: 2px;
+}
+
+.input-group input[type="text"]:focus {
+    border-color: #667eea;
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
     .game-header h1 {
@@ -395,5 +555,11 @@ body {
     .center-info {
         gap: 15px;
         flex-wrap: wrap;
+    }
+
+    .player-name-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
     }
 }
