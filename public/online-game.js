@@ -83,7 +83,6 @@ async function joinRoom() {
             gameState = data.gameState;
             gameLog = data.gameLog;
 
-            // ゲーム画面を表示
             document.getElementById('joinRoomScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
             document.getElementById('displayRoomId').textContent = currentRoomId;
@@ -144,7 +143,7 @@ function connectWebSocket() {
 }
 
 function handleWebSocketMessage(message) {
-    const { type, playerNumber } = message;
+    const { type } = message;
 
     switch (type) {
         case 'player-joined':
@@ -158,6 +157,8 @@ function handleWebSocketMessage(message) {
             document.getElementById('gameScreen').style.display = 'block';
             document.getElementById('displayRoomId').textContent = currentRoomId;
             gameState = message.gameState;
+            playerData = message.playerData; // 修正：手札・フィールドデータを受け取る
+            gameLog = message.gameLog;
             updateGameUI();
             break;
 
@@ -185,20 +186,10 @@ function handleWebSocketMessage(message) {
 }
 
 function startGame() {
-    gameState.gameActive = true;
-    gameState.currentTurn = 1;
-    gameState.currentPlayer = 1;
-    gameLog = ['ゲーム開始！', 'プレイヤー1のターン開始'];
-
     ws.send(JSON.stringify({
         type: 'start-game',
         roomId: currentRoomId,
     }));
-
-    document.getElementById('createRoomScreen').style.display = 'none';
-    document.getElementById('gameScreen').style.display = 'block';
-    document.getElementById('displayRoomId').textContent = currentRoomId;
-    updateGameUI();
 }
 
 // ===== ゲームロジック =====
@@ -212,7 +203,6 @@ function updateGameUI() {
     document.getElementById('statusMessage').textContent =
         gameState.gameActive ? `プレイヤー${gameState.currentPlayer}のターンです` : 'ゲーム開始待機中...';
 
-    // ゲームログ表示
     const logContent = document.getElementById('gameLog');
     logContent.innerHTML = '';
     gameLog.forEach(log => {
@@ -232,20 +222,18 @@ function updatePlayerUI(playerId) {
 
     const prefix = `player${playerId}`;
 
-    // ヘルスバー更新
     const healthPercent = (player.health / player.maxHealth) * 100;
     const healthBar = document.getElementById(`${prefix}Health`);
     healthBar.style.width = healthPercent + '%';
     document.getElementById(`${prefix}HealthText`).textContent = `${player.health}/${player.maxHealth}`;
 
-    // 低ヘルスで色変更
     if (player.health <= 30) {
         healthBar.classList.add('low');
     } else {
         healthBar.classList.remove('low');
     }
 
-    // 手札表示（現在のプレイヤーのみ）
+    // 手札表示（自分のみ）
     const handElement = document.getElementById(`${prefix}Hand`);
     handElement.innerHTML = '';
     if (playerId === currentPlayerNumber) {
@@ -312,6 +300,8 @@ function selectCard(card, cardElement) {
         if (playerData[currentPlayerNumber].mana >= card.cost) {
             gameState.selectedCard = card;
             cardElement.classList.add('selected');
+        } else {
+            alert(`マナが足りません！必要: ${card.cost}, 所持: ${playerData[currentPlayerNumber].mana}`);
         }
     }
     updateGameUI();
@@ -337,7 +327,8 @@ function handleFieldClick(playerId) {
 
 function placeCard() {
     const player = playerData[currentPlayerNumber];
-    const opponent = playerData[currentPlayerNumber === 1 ? 2 : 1];
+    const opponentId = currentPlayerNumber === 1 ? 2 : 1;
+    const opponent = playerData[opponentId];
     const selectedCard = gameState.selectedCard;
 
     if (player.mana < selectedCard.cost) return;
@@ -353,19 +344,21 @@ function placeCard() {
     player.mana -= selectedCard.cost;
     opponent.health -= selectedCard.attack;
 
-    const logMessage = `${selectedCard.name}を配置し、${selectedCard.attack}ダメージを与えました！`;
+    const logMessage = `プレイヤー${currentPlayerNumber}が${selectedCard.name}を配置し、${selectedCard.attack}ダメージを与えました！`;
     gameLog.push(logMessage);
 
     gameState.selectedCard = null;
 
     if (opponent.health <= 0) {
+        opponent.health = 0;
         gameState.gameActive = false;
-        gameLog.push(`🎉 プレイヤー${currentPlayerNumber}が勝利しました！🎉`);
+        const winLog = `🎉 プレイヤー${currentPlayerNumber}が勝利しました！🎉`;
+        gameLog.push(winLog);
         ws.send(JSON.stringify({
             type: 'game-over',
             roomId: currentRoomId,
             winner: currentPlayerNumber,
-            logMessage: gameLog[gameLog.length - 1],
+            logMessage: winLog,
         }));
     } else {
         ws.send(JSON.stringify({
@@ -379,18 +372,26 @@ function placeCard() {
             },
         }));
     }
+
+    updateGameUI();
 }
 
 function endTurn() {
     if (!gameState.gameActive || gameState.currentPlayer !== currentPlayerNumber) return;
 
-    const opponent = gameState.currentPlayer === 1 ? 2 : 1;
-    gameState.currentPlayer = opponent;
+    const opponentId = gameState.currentPlayer === 1 ? 2 : 1;
+    gameState.currentPlayer = opponentId;
     gameState.currentTurn += 1;
 
-    playerData[opponent].mana = playerData[opponent].maxMana;
+    playerData[opponentId].mana = playerData[opponentId].maxMana;
 
-    const logMessage = `ターン終了 → プレイヤー${opponent}のターン開始`;
+    // 相手のデッキからカードを1枚引く
+    if (playerData[opponentId].deck && playerData[opponentId].deck.length > 0) {
+        const card = playerData[opponentId].deck.pop();
+        playerData[opponentId].hand.push({ ...card, instanceId: Math.random() });
+    }
+
+    const logMessage = `ターン終了 → プレイヤー${opponentId}のターン開始`;
     gameLog.push(logMessage);
 
     ws.send(JSON.stringify({
@@ -403,10 +404,11 @@ function endTurn() {
             logMessage,
         },
     }));
+
+    updateGameUI();
 }
 
 // ===== 初期化 =====
 document.addEventListener('DOMContentLoaded', () => {
-    // ルーム選択画面を表示
     document.getElementById('roomSelectScreen').style.display = 'block';
 });
