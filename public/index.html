@@ -47,6 +47,17 @@
                         <p>👤 プレイヤー1: あなた ✓</p>
                         <p>👤 プレイヤー2: <span id="player2Status">待機中...</span></p>
                     </div>
+
+                    <!-- 体力設定 -->
+                    <div class="health-setting" id="healthSettingDisplay" style="display: none; margin-top: 20px;">
+                        <label for="initialHealthInput"><strong>初期体力を設定:</strong></label>
+                        <div class="health-input-row">
+                            <input type="number" id="initialHealthInput" value="100" min="10" max="9999" step="10">
+                            <span>HP</span>
+                        </div>
+                        <p style="font-size: 0.85em; color: #888; margin-top: 5px;">10〜9999の間で設定できます</p>
+                    </div>
+
                     <button class="btn btn-primary" id="startGameBtn" onclick="startGame()" style="display: none; margin-top: 20px;">
                         ゲーム開始
                     </button>
@@ -82,7 +93,12 @@
                 <!-- プレイヤー1（上）-->
                 <div class="player-section player-top">
                     <div class="player-info">
-                        <h2 class="player-name">🎮 プレイヤー1</h2>
+                        <div class="player-name-row">
+                            <h2 class="player-name">🎮 プレイヤー1</h2>
+                            <div class="mana-display" id="player1ManaDisplay">
+                                💎 マナ: <span id="player1ManaText">5/5</span>
+                            </div>
+                        </div>
                         <div class="health-bar-container">
                             <div class="health-bar" id="player1Health" style="width: 100%">
                                 <span class="health-text" id="player1HealthText">100/100</span>
@@ -112,7 +128,12 @@
                 <!-- プレイヤー2（下）-->
                 <div class="player-section player-bottom">
                     <div class="player-info">
-                        <h2 class="player-name">🎮 プレイヤー2</h2>
+                        <div class="player-name-row">
+                            <h2 class="player-name">🎮 プレイヤー2</h2>
+                            <div class="mana-display" id="player2ManaDisplay">
+                                💎 マナ: <span id="player2ManaText">5/5</span>
+                            </div>
+                        </div>
                         <div class="health-bar-container">
                             <div class="health-bar" id="player2Health" style="width: 100%">
                                 <span class="health-text" id="player2HealthText">100/100</span>
