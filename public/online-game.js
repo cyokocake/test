@@ -12,13 +12,13 @@ let playerData = {};
 let gameLog = [];
 
 const cardDatabase = [
-    { id: 1, name: 'スライム', icon: '👾', cost: 1, attack: 1, defense: 1, effect: 'basic' },
-    { id: 2, name: 'ゴブリン', icon: '🧛', cost: 2, attack: 2, defense: 1, effect: 'basic' },
-    { id: 3, name: 'ナイト', icon: '🛡️', cost: 3, attack: 2, defense: 3, effect: 'tank' },
-    { id: 4, name: 'ウィザード', icon: '🧙', cost: 3, attack: 3, defense: 1, effect: 'magic' },
-    { id: 5, name: 'ドラゴン', icon: '🐉', cost: 5, attack: 4, defense: 2, effect: 'flying' },
-    { id: 6, name: 'ヒール', icon: '💚', cost: 2, attack: 0, defense: 0, effect: 'heal' },
-    { id: 7, name: 'ファイア', icon: '🔥', cost: 2, attack: 0, defense: 0, effect: 'damage' },
+    { id: 1, name: 'スライム', icon: '👾', cost: 1, attack: 1, effect: 'basic' },
+    { id: 2, name: 'ゴブリン', icon: '🧛', cost: 2, attack: 2, effect: 'basic' },
+    { id: 3, name: 'ナイト', icon: '🛡️', cost: 3, attack: 2, effect: 'tank' },
+    { id: 4, name: 'ウィザード', icon: '🧙', cost: 3, attack: 3, effect: 'magic' },
+    { id: 5, name: 'ドラゴン', icon: '🐉', cost: 5, attack: 4, effect: 'flying' },
+    { id: 6, name: 'ヒール', icon: '💚', cost: 2, attack: 0, effect: 'heal' },
+    { id: 7, name: 'ファイア', icon: '🔥', cost: 2, attack: 0, effect: 'damage' },
 ];
 
 // ===== ルーム管理 =====
@@ -149,6 +149,7 @@ function handleWebSocketMessage(message) {
         case 'player-joined':
             console.log(message.message);
             document.getElementById('player2Status').textContent = 'プレイヤー2 ✓';
+            document.getElementById('healthSettingDisplay').style.display = 'block';
             document.getElementById('startGameBtn').style.display = 'block';
             break;
 
@@ -157,7 +158,7 @@ function handleWebSocketMessage(message) {
             document.getElementById('gameScreen').style.display = 'block';
             document.getElementById('displayRoomId').textContent = currentRoomId;
             gameState = message.gameState;
-            playerData = message.playerData; // 修正：手札・フィールドデータを受け取る
+            playerData = message.playerData;
             gameLog = message.gameLog;
             updateGameUI();
             break;
@@ -186,9 +187,15 @@ function handleWebSocketMessage(message) {
 }
 
 function startGame() {
+    const input = document.getElementById('initialHealthInput');
+    let initialHealth = parseInt(input.value);
+    if (isNaN(initialHealth) || initialHealth < 10) initialHealth = 10;
+    if (initialHealth > 9999) initialHealth = 9999;
+
     ws.send(JSON.stringify({
         type: 'start-game',
         roomId: currentRoomId,
+        initialHealth: initialHealth,
     }));
 }
 
@@ -222,16 +229,20 @@ function updatePlayerUI(playerId) {
 
     const prefix = `player${playerId}`;
 
+    // ヘルスバー更新
     const healthPercent = (player.health / player.maxHealth) * 100;
     const healthBar = document.getElementById(`${prefix}Health`);
-    healthBar.style.width = healthPercent + '%';
+    healthBar.style.width = Math.max(healthPercent, 0) + '%';
     document.getElementById(`${prefix}HealthText`).textContent = `${player.health}/${player.maxHealth}`;
 
-    if (player.health <= 30) {
+    if (player.health <= player.maxHealth * 0.3) {
         healthBar.classList.add('low');
     } else {
         healthBar.classList.remove('low');
     }
+
+    // マナ表示
+    document.getElementById(`${prefix}ManaText`).textContent = `${player.mana}/${player.maxMana}`;
 
     // 手札表示（自分のみ）
     const handElement = document.getElementById(`${prefix}Hand`);
@@ -262,7 +273,12 @@ function createCardElement(card, playerId, location) {
     if (gameState.currentPlayer !== playerId) {
         cardElement.classList.add('disabled');
     } else if (location === 'hand') {
-        cardElement.classList.add('selectable');
+        const currentMana = playerData[playerId] ? playerData[playerId].mana : 0;
+        if (currentMana >= card.cost) {
+            cardElement.classList.add('selectable');
+        } else {
+            cardElement.classList.add('disabled');
+        }
     }
 
     if (gameState.selectedCard?.instanceId === card.instanceId && location === 'hand') {
@@ -275,7 +291,6 @@ function createCardElement(card, playerId, location) {
         <div class="card-icon">${card.icon}</div>
         <div class="card-stats">
             <div class="card-stat">⚔️${card.attack}</div>
-            <div class="card-stat">🛡️${card.defense}</div>
         </div>
     `;
 
@@ -337,20 +352,19 @@ function placeCard() {
     player.field.push({
         ...selectedCard,
         instanceId: Math.random(),
-        currentAttack: selectedCard.attack,
         canAttack: true,
     });
 
     player.mana -= selectedCard.cost;
     opponent.health -= selectedCard.attack;
+    if (opponent.health < 0) opponent.health = 0;
 
-    const logMessage = `プレイヤー${currentPlayerNumber}が${selectedCard.name}を配置し、${selectedCard.attack}ダメージを与えました！`;
+    const logMessage = `プレイヤー${currentPlayerNumber}が${selectedCard.name}を配置し、${selectedCard.attack}ダメージを与えました！（残りマナ: ${player.mana}）`;
     gameLog.push(logMessage);
 
     gameState.selectedCard = null;
 
     if (opponent.health <= 0) {
-        opponent.health = 0;
         gameState.gameActive = false;
         const winLog = `🎉 プレイヤー${currentPlayerNumber}が勝利しました！🎉`;
         gameLog.push(winLog);
@@ -385,7 +399,6 @@ function endTurn() {
 
     playerData[opponentId].mana = playerData[opponentId].maxMana;
 
-    // 相手のデッキからカードを1枚引く
     if (playerData[opponentId].deck && playerData[opponentId].deck.length > 0) {
         const card = playerData[opponentId].deck.pop();
         playerData[opponentId].hand.push({ ...card, instanceId: Math.random() });
