@@ -97,6 +97,25 @@ app.post('/api/join-room/:roomId', (req, res) => {
             return res.status(404).json({ success: false, message: 'ルームが見つかりません' });
         }
 
+        const playerCount =
+    Object.keys(room.players).length;
+
+if (playerCount >= 2) {
+
+    return res.status(400).json({
+        success: false,
+        message: 'このルームは満員です'
+    });
+}
+
+if (room.players[playerNumber]) {
+
+    return res.status(400).json({
+        success: false,
+        message: `プレイヤー${playerNumber}は既に参加しています`
+    });
+}
+        
         room.players[playerNumber] = { playerNumber, joinedAt: new Date().toISOString() };
 
         res.json({
@@ -135,6 +154,12 @@ app.use((err, req, res, next) => {
 // ===== WebSocket =====
 
 wss.on('connection', (ws) => {
+    ws.isAlive = true;
+
+ws.on('pong', () => {
+    ws.isAlive = true;
+});
+
     console.log('クライアント接続: WebSocket');
 
     ws.on('message', (data) => {
@@ -147,7 +172,45 @@ wss.on('connection', (ws) => {
         }
     });
 
-    ws.on('close', () => console.log('クライアント切断: WebSocket'));
+    ws.on('close', () => {
+
+    console.log(
+        'クライアント切断: WebSocket'
+    );
+
+    const room =
+        gameRooms.get(ws.roomId);
+
+    if (room) {
+
+        room.clients =
+            room.clients.filter(
+                client =>
+                    client.ws !== ws
+            );
+
+        if (ws.playerNumber) {
+            delete room.players[
+                ws.playerNumber
+            ];
+        }
+
+        if (
+            room.clients.length === 0 &&
+            Object.keys(room.players)
+                .length === 0
+        ) {
+            gameRooms.delete(
+                room.roomId
+            );
+
+            console.log(
+                `ルーム削除: ${room.roomId}`
+            );
+        }
+    }
+});
+
     ws.on('error', (error) => console.error('WebSocketエラー:', error));
 });
 
@@ -162,7 +225,23 @@ function handleWebSocketMessage(ws, message) {
 
     switch (type) {
         case 'join':
-            room.clients.push({ ws, playerNumber });
+            ws.roomId = roomId;
+ws.playerNumber = playerNumber;
+
+const exists =
+    room.clients.some(
+        c =>
+            c.playerNumber === playerNumber
+    );
+
+if (!exists) {
+
+    room.clients.push({
+        ws,
+        playerNumber
+    });
+}
+
             broadcastToRoom(room, {
                 type: 'player-joined',
                 playerNumber,
@@ -247,6 +326,31 @@ function broadcastToRoom(room, message) {
         }
     });
 }
+
+setInterval(() => {
+
+    wss.clients.forEach((ws) => {
+
+        if (ws.isAlive === false) {
+
+            console.log(
+                '切断された接続を削除'
+            );
+
+            return ws.terminate();
+        }
+
+        ws.isAlive = false;
+
+        try {
+            ws.ping();
+        } catch {
+            ws.terminate();
+        }
+
+    });
+
+}, 30000);
 
 server.listen(PORT, () => {
     console.log(`🎮 カードゲームサーバーが起動しました: http://localhost:${PORT}`);
