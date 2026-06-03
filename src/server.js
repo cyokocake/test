@@ -14,10 +14,41 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// ===== ゲーム状態管理 =====
-const gameRooms = new Map(); // ルーム情報を保存
+// ===== カードデータベース =====
+const cardDatabase = [
+    { id: 1, name: 'スライム', icon: '👾', cost: 1, attack: 1, defense: 1, effect: 'basic' },
+    { id: 2, name: 'ゴブリン', icon: '🧛', cost: 2, attack: 2, defense: 1, effect: 'basic' },
+    { id: 3, name: 'ナイト', icon: '🛡️', cost: 3, attack: 2, defense: 3, effect: 'tank' },
+    { id: 4, name: 'ウィザード', icon: '🧙', cost: 3, attack: 3, defense: 1, effect: 'magic' },
+    { id: 5, name: 'ドラゴン', icon: '🐉', cost: 5, attack: 4, defense: 2, effect: 'flying' },
+    { id: 6, name: 'ヒール', icon: '💚', cost: 2, attack: 0, defense: 0, effect: 'heal' },
+    { id: 7, name: 'ファイア', icon: '🔥', cost: 2, attack: 0, defense: 0, effect: 'damage' },
+];
 
-// ルーム作成用のユーティリティ
+// ===== デッキ・手札ユーティリティ =====
+function initializeDeck() {
+    const deck = [];
+    for (let i = 0; i < 5; i++) {
+        deck.push(...cardDatabase.slice(0, 5));
+    }
+    deck.sort(() => Math.random() - 0.5);
+    return deck;
+}
+
+function drawCards(deck, count) {
+    const hand = [];
+    for (let i = 0; i < count; i++) {
+        if (deck.length > 0) {
+            const card = deck.pop();
+            hand.push({ ...card, instanceId: Math.random() });
+        }
+    }
+    return hand;
+}
+
+// ===== ゲーム状態管理 =====
+const gameRooms = new Map();
+
 function generateRoomId() {
     return Math.random().toString(36).substring(2, 10).toUpperCase();
 }
@@ -60,12 +91,10 @@ function createRoom() {
 
 // ===== REST API エンドポイント =====
 
-// ルート
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
-// API: ルーム作成
 app.post('/api/create-room', (req, res) => {
     try {
         const roomId = createRoom();
@@ -83,7 +112,6 @@ app.post('/api/create-room', (req, res) => {
     }
 });
 
-// API: ルーム参加
 app.post('/api/join-room/:roomId', (req, res) => {
     const { roomId } = req.params;
     const { playerNumber } = req.body;
@@ -97,7 +125,6 @@ app.post('/api/join-room/:roomId', (req, res) => {
             });
         }
 
-        // プレイヤー情報を保存
         room.players[playerNumber] = {
             playerNumber,
             joinedAt: new Date().toISOString(),
@@ -120,7 +147,6 @@ app.post('/api/join-room/:roomId', (req, res) => {
     }
 });
 
-// API: ゲーム状態取得
 app.get('/api/game-state/:roomId', (req, res) => {
     const { roomId } = req.params;
 
@@ -148,7 +174,6 @@ app.get('/api/game-state/:roomId', (req, res) => {
     }
 });
 
-// API: ゲーム情報
 app.get('/api/game-info', (req, res) => {
     res.json({
         name: 'カードバトル',
@@ -159,12 +184,10 @@ app.get('/api/game-info', (req, res) => {
     });
 });
 
-// 404 ハンドリング
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
-// エラーハンドリング
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -197,7 +220,6 @@ wss.on('connection', (ws) => {
     });
 });
 
-// WebSocketメッセージハンドラ
 function handleWebSocketMessage(ws, message) {
     const { type, roomId, playerNumber, payload } = message;
 
@@ -221,11 +243,20 @@ function handleWebSocketMessage(ws, message) {
             break;
 
         case 'start-game':
+            // デッキ初期化と手札配布
+            room.playerData[1].deck = initializeDeck();
+            room.playerData[2].deck = initializeDeck();
+            room.playerData[1].hand = drawCards(room.playerData[1].deck, 3);
+            room.playerData[2].hand = drawCards(room.playerData[2].deck, 3);
+
             room.gameState.gameActive = true;
             room.gameLog.push('ゲーム開始！');
+            room.gameLog.push('プレイヤー1のターン開始');
+
             broadcastToRoom(room, {
                 type: 'game-started',
                 gameState: room.gameState,
+                playerData: room.playerData,
                 gameLog: room.gameLog,
             });
             break;
@@ -256,10 +287,10 @@ function handleWebSocketMessage(ws, message) {
 
         case 'game-over':
             room.gameState.gameActive = false;
-            room.gameLog.push(payload.logMessage);
+            room.gameLog.push(message.logMessage);
             broadcastToRoom(room, {
                 type: 'game-over',
-                winner: payload.winner,
+                winner: message.winner,
                 gameLog: room.gameLog,
             });
             break;
@@ -272,7 +303,6 @@ function handleWebSocketMessage(ws, message) {
     }
 }
 
-// ルーム内の全クライアントにブロードキャスト
 function broadcastToRoom(room, message) {
     room.clients.forEach(({ ws }) => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -281,7 +311,6 @@ function broadcastToRoom(room, message) {
     });
 }
 
-// サーバー起動
 server.listen(PORT, () => {
     console.log(`🎮 カードゲームサーバーが起動しました: http://localhost:${PORT}`);
     console.log(`📡 WebSocket対応: ws://localhost:${PORT}`);
