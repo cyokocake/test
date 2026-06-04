@@ -97,7 +97,38 @@ app.post('/api/join-room/:roomId', (req, res) => {
             return res.status(404).json({ success: false, message: 'ルームが見つかりません' });
         }
 
-        room.players[playerNumber] = { playerNumber, joinedAt: new Date().toISOString() };
+        case 'join': {
+    // すでにプレイヤー1・2が埋まっている場合 → 観戦者
+    let role = 'spectator';
+
+    if (!room.players[1]) {
+        role = 1;
+        room.players[1] = { playerNumber: 1, joinedAt: new Date().toISOString() };
+    } else if (!room.players[2]) {
+        role = 2;
+        room.players[2] = { playerNumber: 2, joinedAt: new Date().toISOString() };
+    }
+
+    room.clients.push({ ws, playerNumber: role });
+
+    ws.send(JSON.stringify({
+        type: 'joined',
+        role,
+        roomId: room.roomId,
+        gameState: room.gameState,
+        playerData: room.playerData,
+        gameLog: room.gameLog,
+    }));
+
+    broadcastToRoom(room, {
+        type: 'player-joined',
+        playerNumber: role,
+        message: `プレイヤー${role}が参加しました`,
+    });
+
+    break;
+}
+
 
         res.json({
             success: true,
