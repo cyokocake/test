@@ -2,8 +2,6 @@
 let ws = null;
 let currentRoomId = null;
 let currentPlayerNumber = null;
-let reconnectAttempts = 0;
-const MAX_RECONNECT = 10;
 let gameState = {
     currentTurn: 1,
     currentPlayer: 1,
@@ -122,16 +120,12 @@ function connectWebSocket() {
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-
-    console.log('WebSocket接続成功');
-
-    reconnectAttempts = 0;
-
-    ws.send(JSON.stringify({
-        type: 'join',
-        roomId: currentRoomId,
-        playerNumber: currentPlayerNumber,
-    }));
+        console.log('WebSocket接続成功');
+        ws.send(JSON.stringify({
+            type: 'join',
+            roomId: currentRoomId,
+            playerNumber: currentPlayerNumber,
+        }));
     };
 
     ws.onmessage = (event) => {
@@ -144,38 +138,13 @@ function connectWebSocket() {
     };
 
     ws.onclose = () => {
+    console.log("WebSocket切断。1秒後に再接続します…");
 
-    console.log('WebSocket接続切断');
-
-    if (reconnectAttempts >= MAX_RECONNECT) {
-        console.log('再接続上限到達');
-        return;
-    }
-
-    const delay =
-        Math.min(
-            1000 * Math.pow(2, reconnectAttempts),
-            30000
-        );
-
-    reconnectAttempts++;
-
-    console.log(
-        `${delay}ms後に再接続 (${reconnectAttempts}/${MAX_RECONNECT})`
-    );
-
+    // 🔥 再接続処理
     setTimeout(() => {
-
-        if (
-            currentRoomId &&
-            currentPlayerNumber
-        ) {
-            connectWebSocket();
-        }
-
-    }, delay);
+        connectWebSocket();
+    }, 1000);
     };
-
 }
 
 function handleWebSocketMessage(message) {
