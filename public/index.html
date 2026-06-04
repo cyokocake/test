@@ -34,6 +34,8 @@
             <div class="screen-content">
                 <h2>新しいゲームを作成</h2>
                 <p>作成中...</p>
+                <label for="playerNameInput"><strong>あなたの名前:</strong></label>
+                <input type="text" id="playerNameInput" placeholder="名前を入力" style="margin-top: 10px;">
                 <div id="roomInfoDisplay" style="display: none; margin-top: 20px;">
                     <p><strong>ルームID:</strong></p>
                     <div class="room-id-box">
@@ -71,6 +73,8 @@
                 <h2>ゲームに参加</h2>
                 <div class="input-group">
                     <label>ルームID:</label>
+                    <label for="joinPlayerNameInput"><strong>あなたの名前:</strong></label>
+                    <input type="text" id="joinPlayerNameInput" placeholder="名前を入力" style="margin-bottom: 10px;">
                     <input type="text" id="joinRoomIdInput" placeholder="ルームIDを入力" maxlength="8">
                     <button class="btn btn-primary" onclick="joinRoom()">参加</button>
                     <button class="btn btn-secondary" onclick="backToRoomSelect()">戻る</button>
