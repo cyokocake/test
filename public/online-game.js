@@ -51,7 +51,8 @@ async function createNewRoom() {
             currentPlayerNumber = 1;
             document.getElementById('roomIdText').textContent = data.roomId;
             document.getElementById('roomInfoDisplay').style.display = 'block';
-            connectWebSocket();
+            const playerName = document.getElementById('playerNameInput').value || "プレイヤー1";
+            connectWebSocket(playerName);
         }
     } catch (error) {
         console.error('ルーム作成エラー:', error);
@@ -68,10 +69,11 @@ async function joinRoom() {
     }
 
     try {
+        const playerName = document.getElementById('joinPlayerNameInput').value || "プレイヤー2";
         const response = await fetch(`/api/join-room/${roomId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ playerNumber: 2 }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerNumber: 2, playerName }),
         });
 
         const data = await response.json();
@@ -113,20 +115,21 @@ function copyRoomId() {
 
 // ===== WebSocket 接続 =====
 
-function connectWebSocket() {
+function connectWebSocket(playerName) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}`;
 
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-        console.log('WebSocket接続成功');
         ws.send(JSON.stringify({
             type: 'join',
             roomId: currentRoomId,
             playerNumber: currentPlayerNumber,
+            playerName: playerName,   // ← 追加
         }));
     };
+
 
     ws.onmessage = (event) => {
         const message = JSON.parse(event.data);
@@ -188,6 +191,17 @@ function handleWebSocketMessage(message) {
             document.getElementById('statusMessage').textContent = `プレイヤー${message.winner}が勝利しました！`;
             updateGameUI();
             break;
+        case 'joined':
+            currentPlayerNumber = message.role;
+            currentPlayerName = message.name;
+            allPlayers = message.players;
+            // 観戦者なら操作不可にする
+            if (currentPlayerNumber === 'spectator') {
+                document.getElementById('statusMessage').textContent = '観戦モード';
+                document.getElementById('endTurnBtn').style.display = 'none';
+            }
+            updateGameUI();
+            break;
     }
 }
 
@@ -209,6 +223,11 @@ function startGame() {
 function updateGameUI() {
     updatePlayerUI(1);
     updatePlayerUI(2);
+    
+    document.getElementById('player1Name').textContent =
+    allPlayers?.[1]?.name || "プレイヤー1";
+    document.getElementById('player2Name').textContent =
+    allPlayers?.[2]?.name || "プレイヤー2";
 
     document.getElementById('turnNumber').textContent = `ターン: ${gameState.currentTurn}`;
     document.getElementById('turnIndicator').textContent = `現在: プレイヤー${gameState.currentPlayer}のターン`;
