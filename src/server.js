@@ -136,7 +136,12 @@ wss.on('connection', (ws) => {
     console.log('クライアント接続: WebSocket');
 
     ws.on('message', (data) => {
-        ...
+        try {
+            const message = JSON.parse(data);
+            handleWebSocketMessage(ws, message);   // ← これが必要
+        } catch (error) {
+            console.error('メッセージ処理エラー:', error);
+        }
     });
 
     ws.on('close', () => {
