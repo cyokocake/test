@@ -23,6 +23,43 @@ const cardDatabase = [
     { id: 7, name: 'ファイア', icon: '🔥', cost: 2, attack: 0, effect: 'damage' },
 ];
 
+// ===== ローカルストレージ管理 =====
+function saveGameSession() {
+    // ✅ 追加: ゲーム情報をローカルストレージに保存
+    const sessionData = {
+        roomId: currentRoomId,
+        playerNumber: currentPlayerNumber,
+        playerName: currentPlayerName,
+        gameActive: gameState.gameActive,
+        timestamp: Date.now(),
+    };
+    localStorage.setItem('cardGameSession', JSON.stringify(sessionData));
+}
+
+function loadGameSession() {
+    // ✅ 追加: ローカルストレージからゲーム情報を復元
+    try {
+        const sessionData = JSON.parse(localStorage.getItem('cardGameSession'));
+        if (!sessionData) return null;
+        
+        // セッションが24時間以上古い場合は無効化
+        if (Date.now() - sessionData.timestamp > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem('cardGameSession');
+            return null;
+        }
+        
+        return sessionData;
+    } catch (error) {
+        console.error('セッション復元エラー:', error);
+        return null;
+    }
+}
+
+function clearGameSession() {
+    // ✅ 追加: ローカルストレージからゲーム情報を削除
+    localStorage.removeItem('cardGameSession');
+}
+
 // ===== ルーム管理 =====
 
 function showCreateRoomDialog() {
@@ -41,6 +78,7 @@ function backToRoomSelect() {
     document.getElementById('joinRoomScreen').style.display = 'none';
     document.getElementById('roomSelectScreen').style.display = 'block';
     document.getElementById('joinErrorMessage').style.display = 'none';
+    clearGameSession();
 }
 
 async function createNewRoom() {
@@ -54,6 +92,7 @@ async function createNewRoom() {
             currentPlayerName = document.getElementById('playerNameInput').value || "プレイヤー1";  // ✅ 保存
             document.getElementById('roomIdText').textContent = data.roomId;
             document.getElementById('roomInfoDisplay').style.display = 'block';
+            saveGameSession();  // ✅ 追加: セッション��存
             connectWebSocket(currentPlayerName);
         }
     } catch (error) {
@@ -90,6 +129,7 @@ async function joinRoom() {
             // ✅ 修正: 入力された名前を allPlayers に追加
             allPlayers[currentPlayerNumber] = { playerNumber: currentPlayerNumber, name: currentPlayerName };
 
+            saveGameSession();  // ✅ 追加: セッション保存
             document.getElementById('joinRoomScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
             document.getElementById('displayRoomId').textContent = currentRoomId;
@@ -178,6 +218,7 @@ function handleWebSocketMessage(message) {
             gameState = message.gameState;
             playerData = message.playerData;
             gameLog = message.gameLog;
+            saveGameSession();  // ✅ 追加: ゲーム開始時にセッション保存
             updateGameUI();
             break;
 
@@ -185,6 +226,7 @@ function handleWebSocketMessage(message) {
             playerData = message.playerData;
             gameState = message.gameState;
             gameLog = message.gameLog;
+            saveGameSession();  // ✅ 追加: ゲーム状態更新時にセッション保存
             updateGameUI();
             break;
 
@@ -192,6 +234,7 @@ function handleWebSocketMessage(message) {
             playerData = message.playerData;
             gameState = message.gameState;
             gameLog = message.gameLog;
+            saveGameSession();  // ✅ 追加: ゲーム状態更新時にセッション保存
             updateGameUI();
             break;
 
@@ -199,6 +242,7 @@ function handleWebSocketMessage(message) {
             gameState.gameActive = false;
             gameLog = message.gameLog;
             document.getElementById('statusMessage').textContent = `プレイヤー${message.winner}が勝利しました！`;
+            clearGameSession();  // ✅ 追加: ゲーム終了時にセッション削除
             updateGameUI();
             break;
         case 'joined':
@@ -464,5 +508,49 @@ function endTurn() {
 
 // ===== 初期化 =====
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('roomSelectScreen').style.display = 'block';
+    // ✅ 追加: ページロード時にセッション復帰を試みる
+    const savedSession = loadGameSession();
+    
+    if (savedSession) {
+        // セッションが存在する場合は復帰処理を実行
+        currentRoomId = savedSession.roomId;
+        currentPlayerNumber = savedSession.playerNumber;
+        currentPlayerName = savedSession.playerName;
+        
+        console.log(`セッション復帰: ルーム ${currentRoomId}, プレイヤー ${currentPlayerNumber}`);
+        
+        // REST API でゲーム状態を取得
+        fetch(`/api/game-state/${currentRoomId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    gameState = data.gameState;
+                    playerData = data.playerData;
+                    gameLog = data.gameLog;
+                    
+                    // ゲーム画面を表示
+                    document.getElementById('roomSelectScreen').style.display = 'none';
+                    document.getElementById('createRoomScreen').style.display = 'none';
+                    document.getElementById('joinRoomScreen').style.display = 'none';
+                    document.getElementById('gameScreen').style.display = 'block';
+                    document.getElementById('displayRoomId').textContent = currentRoomId;
+                    
+                    // WebSocket に接続して復帰を告知
+                    connectWebSocket(currentPlayerName);
+                    updateGameUI();
+                } else {
+                    // ルームが存在しない場合はセッションクリア
+                    clearGameSession();
+                    document.getElementById('roomSelectScreen').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('セッション復帰エラー:', error);
+                clearGameSession();
+                document.getElementById('roomSelectScreen').style.display = 'block';
+            });
+    } else {
+        // セッションがない場合は通常のルーム選択画面を表示
+        document.getElementById('roomSelectScreen').style.display = 'block';
+    }
 });
