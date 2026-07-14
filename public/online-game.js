@@ -2,6 +2,8 @@
 let ws = null;
 let currentRoomId = null;
 let currentPlayerNumber = null;
+let currentPlayerName = null;  // ✅ 追加: 再接続時に使用
+let allPlayers = {};  // ✅ 修正: undefined エラーを防止
 let gameState = {
     currentTurn: 1,
     currentPlayer: 1,
@@ -49,10 +51,10 @@ async function createNewRoom() {
         if (data.success) {
             currentRoomId = data.roomId;
             currentPlayerNumber = 1;
+            currentPlayerName = document.getElementById('playerNameInput').value || "プレイヤー1";  // ✅ 保存
             document.getElementById('roomIdText').textContent = data.roomId;
             document.getElementById('roomInfoDisplay').style.display = 'block';
-            const playerName = document.getElementById('playerNameInput').value || "プレイヤー1";
-            connectWebSocket(playerName);
+            connectWebSocket(currentPlayerName);
         }
     } catch (error) {
         console.error('ルーム作成エラー:', error);
@@ -69,11 +71,11 @@ async function joinRoom() {
     }
 
     try {
-        const playerName = document.getElementById('joinPlayerNameInput').value || "プレイヤー2";
+        currentPlayerName = document.getElementById('joinPlayerNameInput').value || "プレイヤー2";  // ✅ 保存
         const response = await fetch(`/api/join-room/${roomId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerNumber: 2, playerName }),
+        body: JSON.stringify({ playerNumber: 2, playerName: currentPlayerName }),
         });
 
         const data = await response.json();
@@ -89,7 +91,7 @@ async function joinRoom() {
             document.getElementById('gameScreen').style.display = 'block';
             document.getElementById('displayRoomId').textContent = currentRoomId;
 
-            connectWebSocket();
+            connectWebSocket(currentPlayerName);
             updateGameUI();
         } else {
             showJoinError(data.message);
@@ -116,6 +118,11 @@ function copyRoomId() {
 // ===== WebSocket 接続 =====
 
 function connectWebSocket(playerName) {
+    // ✅ 修正: playerName を保存して再接続時に使用
+    if (playerName) {
+        currentPlayerName = playerName;
+    }
+
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}`;
 
@@ -126,7 +133,7 @@ function connectWebSocket(playerName) {
             type: 'join',
             roomId: currentRoomId,
             playerNumber: currentPlayerNumber,
-            playerName: playerName,   // ← 追加
+            playerName: currentPlayerName,   // ✅ 保存された名前を使用
         }));
     };
 
@@ -143,9 +150,9 @@ function connectWebSocket(playerName) {
     ws.onclose = () => {
     console.log("WebSocket切断。1秒後に再接続します…");
 
-    // 🔥 再接続処理
+    // ✅ 修正: currentPlayerName を渡して再接続
     setTimeout(() => {
-        connectWebSocket();
+        connectWebSocket(currentPlayerName);
     }, 1000);
     };
 }
