@@ -87,6 +87,9 @@ async function joinRoom() {
             gameState = data.gameState;
             gameLog = data.gameLog;
 
+            // ✅ 修正: 入力された名前を allPlayers に追加
+            allPlayers[currentPlayerNumber] = { playerNumber: currentPlayerNumber, name: currentPlayerName };
+
             document.getElementById('joinRoomScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
             document.getElementById('displayRoomId').textContent = currentRoomId;
@@ -202,6 +205,13 @@ function handleWebSocketMessage(message) {
             currentPlayerNumber = message.role;
             currentPlayerName = message.name;
             allPlayers = message.players;
+            // ✅ 修正: allPlayers に入力された名前が含まれていない場合は追加
+            if (!allPlayers[currentPlayerNumber] || !allPlayers[currentPlayerNumber].name) {
+                if (!allPlayers[currentPlayerNumber]) {
+                    allPlayers[currentPlayerNumber] = {};
+                }
+                allPlayers[currentPlayerNumber].name = currentPlayerName;
+            }
             // 観戦者なら操作不可にする
             if (currentPlayerNumber === 'spectator') {
                 document.getElementById('statusMessage').textContent = '観戦モード';
