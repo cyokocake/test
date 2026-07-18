@@ -292,6 +292,7 @@ body {
     align-items: center;
     gap: 30px;
     padding: 20px;
+    flex-wrap: wrap;
 }
 
 .turn-number {
@@ -301,6 +302,7 @@ body {
 }
 
 .end-turn-btn,
+.abandon-game-btn,
 .restart-btn {
     padding: 12px 30px;
     font-size: 1em;
@@ -325,6 +327,17 @@ body {
 .end-turn-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.abandon-game-btn {
+    background: #ff6b6b;
+    color: white;
+}
+
+.abandon-game-btn:hover {
+    background: #ff5252;
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
 }
 
 .restart-btn {
@@ -547,6 +560,7 @@ body {
     }
 
     .end-turn-btn,
+    .abandon-game-btn,
     .restart-btn {
         padding: 10px 20px;
         font-size: 0.9em;

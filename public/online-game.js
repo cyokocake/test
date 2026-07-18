@@ -92,7 +92,7 @@ async function createNewRoom() {
             currentPlayerName = document.getElementById('playerNameInput').value || "プレイヤー1";  // ✅ 保存
             document.getElementById('roomIdText').textContent = data.roomId;
             document.getElementById('roomInfoDisplay').style.display = 'block';
-            saveGameSession();  // ✅ 追加: セッション��存
+            saveGameSession();  // ✅ 追加: セッション保存
             connectWebSocket(currentPlayerName);
         }
     } catch (error) {
@@ -245,6 +245,23 @@ function handleWebSocketMessage(message) {
             clearGameSession();  // ✅ 追加: ゲーム終了時にセッション削除
             updateGameUI();
             break;
+
+        case 'game-abandoned':
+            gameState.gameActive = false;
+            gameLog = message.gameLog;
+            document.getElementById('statusMessage').textContent = 
+                `プレイヤー${message.abandoner}がゲームを放棄しました。プレイヤー${message.winner}の勝利！`;
+            clearGameSession();  // ✅ 追加: セッション削除
+            updateGameUI();
+            
+            // 数秒後にルーム選択に戻す
+            setTimeout(() => {
+                document.getElementById('gameScreen').style.display = 'none';
+                document.getElementById('roomSelectScreen').style.display = 'block';
+                location.reload(); // 確実にリセット
+            }, 3000);
+            break;
+
         case 'joined':
             currentPlayerNumber = message.role;
             currentPlayerName = message.name;
@@ -260,6 +277,7 @@ function handleWebSocketMessage(message) {
             if (currentPlayerNumber === 'spectator') {
                 document.getElementById('statusMessage').textContent = '観戦モード';
                 document.getElementById('endTurnBtn').style.display = 'none';
+                document.getElementById('abandonGameBtn').style.display = 'none';
             }
             updateGameUI();
             break;
@@ -277,6 +295,28 @@ function startGame() {
         roomId: currentRoomId,
         initialHealth: initialHealth,
     }));
+}
+
+// ===== ゲーム放棄機能 =====
+
+function abandonGame() {
+    if (!confirm('本当にゲームを放棄しますか？')) return;
+    
+    ws.send(JSON.stringify({
+        type: 'abandon-game',
+        roomId: currentRoomId,
+        playerNumber: currentPlayerNumber,
+    }));
+    
+    // ゲーム情報をクリア
+    clearGameSession();
+    
+    // ルーム選択画面に戻る
+    setTimeout(() => {
+        document.getElementById('gameScreen').style.display = 'none';
+        document.getElementById('roomSelectScreen').style.display = 'block';
+        location.reload(); // 確実にリセット
+    }, 500);
 }
 
 // ===== ゲームロジック =====

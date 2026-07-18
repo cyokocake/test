@@ -262,6 +262,41 @@ function handleWebSocketMessage(ws, message) {
             });
             break;
 
+        case 'abandon-game': {
+            // ゲーム状態を終了
+            room.gameState.gameActive = false;
+            const abandoner = message.playerNumber;
+            const winner = abandoner === 1 ? 2 : 1;
+            
+            const logMessage = `プレイヤー${abandoner}がゲームを放棄しました。プレイヤー${winner}の勝利！`;
+            room.gameLog.push(logMessage);
+            
+            // 両プレイヤーに通知
+            broadcastToRoom(room, {
+                type: 'game-abandoned',
+                winner: winner,
+                abandoner: abandoner,
+                gameLog: room.gameLog,
+            });
+            
+            // 接続を切断
+            room.clients.forEach(({ ws }) => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.close();
+                }
+            });
+            room.clients = [];
+            
+            // ルームをクリア（メモリ節約）
+            setTimeout(() => {
+                if (room.clients.length === 0) {
+                    gameRooms.delete(roomId);
+                    console.log(`ルーム ${roomId} を削除しました`);
+                }
+            }, 5000);
+            break;
+        }
+
         default:
             ws.send(JSON.stringify({ type: 'error', message: '不明なメッセージタイプ' }));
     }
